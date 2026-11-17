@@ -46,7 +46,16 @@
         ];
       };
 
-      checks.${system}.package = pkgs.callPackage ./tests/package.nix { inherit lumo; };
+      checks.${system} = {
+        package = pkgs.callPackage ./tests/package.nix { inherit lumo; };
+        updater = pkgs.runCommand "lumo-updater-tests" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+          mkdir -p scripts tests
+          cp ${./scripts/update-lumo.mjs} scripts/update-lumo.mjs
+          cp ${./tests/update-lumo.test.mjs} tests/update-lumo.test.mjs
+          node --test tests/update-lumo.test.mjs
+          touch "$out"
+        '';
+      };
       formatter.${system} = pkgs.nixfmt;
     };
 }

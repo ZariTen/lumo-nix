@@ -1,0 +1,67 @@
+name: Update Lumo
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update-lumo.yml
+      - scripts/update-lumo.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-lumo
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: Test updater
+        run: nix build .#checks.x86_64-linux.updater --print-build-logs
+      - name: Check Proton release feed
+        id: update
+        run: nix shell --inputs-from . nixpkgs#nodejs --command node scripts/update-lumo.mjs
+      - name: Build and check new release
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          nix build .#lumo --print-build-logs
+          nix flake check --print-build-logs
+      - name: Open update pull request
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8
+        with:
+          token: ${{ github.token }}
+          base: main
+          branch: bot/update-lumo
+          delete-branch: true
+          add-paths: package.nix
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          commit-message: 'chore: update Lumo to ${{ steps.update.outputs.version }}'
+          title: 'chore: update Lumo to ${{ steps.update.outputs.version }}'
+          body: |
+            New stable Lumo release detected in Proton's official update feed.
+
+            - Updates only the Lumo version and SHA-256 in `package.nix`.
+            - Downloads from the canonical Proton Debian URL.
+            - `nix build .#lumo` and `nix flake check` passed before this PR was created.
+
+            Review and merge to publish. This workflow does not auto-merge.
+            Because this PR uses `GITHUB_TOKEN`, GitHub may suppress separate PR
+            workflow runs; the update workflow above already tested these changes.
