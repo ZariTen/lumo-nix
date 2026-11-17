@@ -118,6 +118,44 @@ it. Equivalent direct packaging is available with
   forced on every user. To test XWayland, try `GDK_BACKEND=x11 lumo`.
 - App updates are managed by Nix: update this package, not the read-only store.
 
+### Shell shows “Connection failed / Enable shell access”
+
+In Lumo **0.5.9**, this particular message is a misleading label for a disabled
+built-in Shell connector, not evidence of an MCP transport failure. If the
+checkbox and **Enable shell access** button are disabled and the dialog says
+“Add at least one allowed folder under Filesystem first”, complete these steps:
+
+1. Sign in to Lumo, then open **Settings → Connectors → Filesystem**.
+2. Choose **Add folder**, select an existing project/work folder you intend
+   Lumo to use, and finish the Filesystem dialog. Do not add your entire home
+   directory unless that is deliberately the access you want.
+3. Reopen **Shell** and select **Allow the model to run shell commands** or
+   **Enable shell access**. The control becomes available once a folder is set.
+4. Keep the `run` tool's approval policy on **Ask** unless you explicitly want
+   automatic execution. Test with a harmless command such as `pwd` and review
+   the approval request.
+
+These grants are per Lumo account. Do not reset MCP servers or delete keychain
+credentials to fix this state. Installing Node.js or an MCP server cannot
+unlock a checkbox disabled by the missing-folder prerequisite.
+
+**Security:** the allowed folder selects the shell command's permitted starting
+working directory; it is **not a filesystem sandbox**. Shell commands run with
+your user's permissions and can access files outside that folder. This flake
+never enables shell execution, grants folders, or changes approval policies on
+your behalf.
+
+This diagnosis follows the upstream 0.5.9 implementation:
+[`renderBashAuth` disables the checkbox when there are no folders](https://github.com/ProtonLumo/lumo-desktop/blob/bd5e2c608bac61f215d4a2094e26ef88cb7bc1e0/webview/pages/settings/index.js#L1363-L1398),
+[`readiness` blocks Shell until it is enabled and has folders](https://github.com/ProtonLumo/lumo-desktop/blob/bd5e2c608bac61f215d4a2094e26ef88cb7bc1e0/src-tauri/src/tools/connectors/bash.rs#L199-L215),
+and [the UI labels that blocked state “Connection failed”](https://github.com/ProtonLumo/lumo-desktop/blob/bd5e2c608bac61f215d4a2094e26ef88cb7bc1e0/webview/pages/settings/index.js#L460-L474).
+
+If it still fails **after** adding a folder and enabling Shell, the same generic
+heading can hide a different problem. Capture the exact detail beneath the
+heading and reproduce from a terminal with `lumo`; do not assume all
+“Connection failed” messages have this cause. Authenticated shell execution
+has not been tested by this packaging repository's isolated startup smoke test.
+
 ## Build and verify
 
 ```sh
