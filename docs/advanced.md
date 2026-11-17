@@ -79,3 +79,5 @@ nix develop --command bash tests/smoke.sh
 The GUI test uses a private display, profile and D-Bus session and saves a screenshot
 and startup log. Inspect the screenshot to confirm rendering. It does not test
 authenticated sign-in, chat or shell execution.
+
+See [maintenance](maintenance.md) for automated updates.
