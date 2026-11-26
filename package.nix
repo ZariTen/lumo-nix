@@ -22,12 +22,12 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "lumo";
-  version = "0.5.9";
+  version = "0.5.10";
   strictDeps = true;
 
   src = fetchurl {
     url = "https://proton.me/download/lumo/linux/${finalAttrs.version}/Lumo_${finalAttrs.version}_amd64.deb";
-    hash = "sha256-mzYnJvaACYjwstr36wG9UYCk7M/PQdg1RSnmsVv6Ulc=";
+    hash = "sha256-6uYVEdwpii2c6zYRF5o3lUlqYtape1hwox1pUBFgYmI=";
   };
 
   nativeBuildInputs = [
